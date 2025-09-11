@@ -162,7 +162,11 @@ namespace GDD3400.Project01
 
             if (_filteredTargets.Count == 0) return;
 
-            _target = _filteredTargets[0].transform.position;
+            //_target = _filteredTargets[0].transform.position;
+
+            //_target = null;
+
+            //winGame();
         }
 
         private void DoFlee()
@@ -173,6 +177,12 @@ namespace GDD3400.Project01
             if (_filteredTargets.Count == 0) return;
 
             // TODO: Flee Logic - Using the filtered targets, pick the appopriate threat and move away from it
+
+                //if (threatPosition == _sightRadius)
+                //{
+                    //direction = (position - threatPosition);
+                //}
+
         
         }
 
@@ -185,6 +195,22 @@ namespace GDD3400.Project01
 
             // TODO: Flock Logic - Using the filtered targets, pick the appopriate friend and move toward it
 
+                   // if(distanceToCenter > _friendRadius)
+                    //{
+
+                        //if(_sightRadius == _friendRadius)
+                       // {
+                            //target = _friendRadius;
+
+                            //if(sheep.position == _friendRadius)
+                           // {
+
+                                //DoWander();
+                           // }
+                        //}
+
+                    //}
+
         }
 
         private void DoWander()
@@ -193,6 +219,8 @@ namespace GDD3400.Project01
             _currentAction = SheepAction.Wandering;
 
             // TODO: Wander Logic - Pick a new random wander target using any method you wish
+
+           // _target = Vector3((random(2,5),random(2,5),random(2,5)));
 
         }
 
