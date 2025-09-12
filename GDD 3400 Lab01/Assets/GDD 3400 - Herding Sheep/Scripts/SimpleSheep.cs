@@ -171,6 +171,9 @@ namespace GDD3400.Project01
 
         private void DoFlee()
         {
+
+             //float threatPosition = Threat.transform.position;
+
             // Update the current action
             _currentAction = SheepAction.Fleeing;
 
@@ -178,9 +181,9 @@ namespace GDD3400.Project01
 
             // TODO: Flee Logic - Using the filtered targets, pick the appopriate threat and move away from it
 
-                //if (threatPosition == _sightRadius)
+                //if (threatPosition == _filteredTargets.transform.position)
                 //{
-                    //direction = (position - threatPosition);
+                    //SheepPrefab.transform.direction = (SheepPrefab.transform.position - threatPosition);
                 //}
 
         
