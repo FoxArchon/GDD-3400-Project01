@@ -1,11 +1,22 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace GDD3400.Project01
 {
+
+    [SelectionBase]
+    [RequireComponent(typeof(Rigidbody))]
+
     public class Dog : MonoBehaviour
     {
 
-        //private RigidBody _rb;
+       //private RigidBody _rb; 
+
+        
         
         private bool _isActive = true;
         public bool IsActive 
@@ -28,12 +39,39 @@ namespace GDD3400.Project01
         private string safeZoneTag = "SafeZone";
 
 
+        //Added variables to make the RigidBody stuff work
+
+
+         // Movement Settings
+        [NonSerialized] private float _stoppingDistance = 1.5f;
+        [NonSerialized] private float _flockingDistance = 3.5f;
+        [NonSerialized] private float _wanderSpeed = .5f;
+        [NonSerialized] private float _walkSpeed = 2.5f;
+        [NonSerialized] private float _runSpeed = 5f;
+        [NonSerialized] private float _turnRate = 5f;
+
+     
+
+        // Dynamic Movement Variables
+        private Vector3 _velocity;
+        private float _targetSpeed;
+        private Vector3 _target;
+        private Vector3 _floatingTarget;
+        private Collider[] _tmpTargets = new Collider[16]; // Maximum of 16 targets in each perception check
+
+
+
+
+
+
 
         public void Awake()
         {
             // Find the layers in the project settings
             _targetsLayer = LayerMask.GetMask("Targets");
             _obstaclesLayer = LayerMask.GetMask("Obstacles");
+
+            //_rb = GetComponent<Rigidbody>();
 
         }
 
@@ -137,6 +175,29 @@ namespace GDD3400.Project01
             if (!_isActive) return;
 
             
+                //copy and pasted sheep rigid body code
+
+             if (_floatingTarget != Vector3.zero && Vector3.Distance(transform.position, _floatingTarget) > _stoppingDistance)
+            {
+                // Calculate the direction to the target position
+                Vector3 direction = (_floatingTarget - transform.position).normalized;
+
+                // Calculate the movement vector
+                _velocity = direction * Mathf.Min(_targetSpeed, Vector3.Distance(transform.position, _floatingTarget));
+            }
+
+            // Calculate the desired rotation towards the movement vector
+            if (_velocity != Vector3.zero)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(_velocity);
+                
+                // Smoothly rotate towards the target rotation based on the turn rate
+                transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, _turnRate);
+            }
+
+            //_rb.linearVelocity = _velocity;
+
+
             
         }
     }
