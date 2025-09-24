@@ -10,11 +10,13 @@ namespace GDD3400.Project01
 
     [SelectionBase]
     [RequireComponent(typeof(Rigidbody))]
-
     public class Dog : MonoBehaviour
     {
 
-       //private RigidBody _rb; 
+       
+        private Rigidbody _rb; 
+        private Level _level;
+       
 
         
         
@@ -24,6 +26,9 @@ namespace GDD3400.Project01
             get => _isActive;
             set => _isActive = value;
         }
+
+
+
 
         // Required Variables (Do not edit!)
         private float _maxSpeed = 5f;
@@ -62,16 +67,13 @@ namespace GDD3400.Project01
 
 
 
-
-
-
         public void Awake()
         {
             // Find the layers in the project settings
             _targetsLayer = LayerMask.GetMask("Targets");
             _obstaclesLayer = LayerMask.GetMask("Obstacles");
 
-            //_rb = GetComponent<Rigidbody>();
+            _rb = GetComponent<Rigidbody>();
 
         }
 
@@ -195,7 +197,7 @@ namespace GDD3400.Project01
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, _turnRate);
             }
 
-            //_rb.linearVelocity = _velocity;
+            _rb.linearVelocity = _velocity;
 
 
             
