@@ -16,18 +16,13 @@ namespace GDD3400.Project01
        
         private Rigidbody _rb; 
         private Level _level;
-       
-
-        
-        
+         
         private bool _isActive = true;
         public bool IsActive 
         {
             get => _isActive;
             set => _isActive = value;
         }
-
-
 
 
         // Required Variables (Do not edit!)
@@ -38,10 +33,10 @@ namespace GDD3400.Project01
         public LayerMask _targetsLayer;
         public LayerMask _obstaclesLayer;
 
-        // Tags - Set In Project Settings
-        private string friendTag = "Friend";
-        private string threatTag = "Thread";
-        private string safeZoneTag = "SafeZone";
+          // Tags - Set In Project Settings
+        private const string _friendTag = "Friend";
+        private const string _threatTag = "Threat";
+        private const string _safeZoneTag = "SafeZone";
 
 
         //Added variables to make the RigidBody stuff work
@@ -65,6 +60,11 @@ namespace GDD3400.Project01
         private Collider[] _tmpTargets = new Collider[16]; // Maximum of 16 targets in each perception check
 
 
+
+        //These make the perception work
+        private Collider _threatTarget;
+        private Collider _safeZoneTarget;
+        private List<Collider> _friendTargets = new List<Collider>();
 
 
         public void Awake()
@@ -90,83 +90,78 @@ namespace GDD3400.Project01
 
             //this code is similar to the sheep perception except the threat possibilites are not needed
 
-           // _friendTargets.Clear();
-           // _safeZoneTarget = null;
+            _friendTargets.Clear();
+            _safeZoneTarget = null;
 
             // Collect all target colliders within the sight radius
-            //int t = Physics.OverlapSphereNonAlloc(transform.position, _sightRadius, _tmpTargets, _targetsLayer);
-            //for (int i = 0; i < t; i++)
-            //{
-               // var c = _tmpTargets[i];
-                //if (c==null || c.gameObject == gameObject) continue;
+            int t = Physics.OverlapSphereNonAlloc(transform.position, _sightRadius, _tmpTargets, _targetsLayer);
+            for (int i = 0; i < t; i++)
+            {
+                var c = _tmpTargets[i];
+                if (c==null || c.gameObject == gameObject) continue;
 
                 // Store the friends and safe zone targets
-                //switch (c.tag)
-                //{
-                   // case _friendTag:
-                        //_friendTargets.Add(c);
-                        //break;
+                switch (c.tag)
+                {
+                    case _friendTag:
+                        _friendTargets.Add(c);
+                        break;
                    
-                    //case _safeZoneTag:
-                       // _safeZoneTarget = c;
-                       // break;
-                //}
-            //}
+                    case _safeZoneTag:
+                        _safeZoneTarget = c;
+                        break;
+                }
+            }
             
         }
 
         private void DecisionMaking()
         {
-
-
-            
-            //if sheep are seen, go near to the sheep
-
-            //This is simialr to the sheep behavior that goes toward the do if it is a freind except speed is defaukt for the dog.
-
-
-            // foreach (var friend in _friendTargets)
-           // {
-               // if (friend.GetComponentInParent<Dog>() != null)
-               // {
-                    //_target = friend.transform.position;
-                   // return;
-               // }
-            //}
-
-
-            //if certain distance from sheep go back toward safezone at a walk 
-
-            //check if dog is close enough
-           // if(var friend.position - var dog.postion < 5 )
-            //{
-
-                //walk toward safezone
-
-                //_target = _safeZoneTarget;
-
-
-
-           // }
-
-            
-            //if no sheep seen that are not in safe zone, go wander
-
-            //if(_friendTargets = null or freindTargets == InSafeZone)
-
-            //{
-
-                // go back to wander behavior
-
-
-            //}
-
-            //if no sheep within sight, rotate 360 degrees
-
-
-
+          
+         CalculateMoveTarget();
 
         }
+            
+
+             public void CalculateMoveTarget()
+        {
+            _floatingTarget = Vector3.Lerp(_floatingTarget, _target, Time.deltaTime * 10f);
+
+            // First calculate the centroid of the friends, this is useful for both flocking and fleeing
+            Vector3 centroid = Vector3.zero;
+
+            // Calculate the centroid of all friend targets
+            if (_friendTargets.Count > 0)
+            {
+                foreach (var friend in _friendTargets)
+                {
+                    centroid += friend.transform.position;
+                }
+
+                centroid /= _friendTargets.Count;
+            }
+
+
+            //Check if number of targers friends nearby is a certain threshold, if so, head to Safe Zone
+
+            if(_friendTargets.Count >= 3)
+            {
+
+                //walkspeed is important her because otherwise the sheep could not keep up
+                _target = _safeZoneTarget.transform.position;
+                _targetSpeed = _walkSpeed;
+                return;
+
+            }
+
+            // Dog should go fast if sheep are not following
+            _targetSpeed = _maxSpeed;
+
+            _target = transform.position;
+
+            
+        }
+
 
         /// <summary>
         /// Make sure to use FixedUpdate for movement with physics based Rigidbody
