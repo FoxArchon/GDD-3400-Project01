@@ -38,6 +38,7 @@ namespace GDD3400.Project01
         private const string _threatTag = "Threat";
         private const string _safeZoneTag = "SafeZone";
 
+      
 
         //Added variables to make the RigidBody stuff work
 
@@ -58,8 +59,12 @@ namespace GDD3400.Project01
         private Vector3 _target;
         private Vector3 _floatingTarget;
         private Collider[] _tmpTargets = new Collider[16]; // Maximum of 16 targets in each perception check
+        
+        //start postion variable to go back to if have enough sheep nearby
 
+        private Vector3 startPosition;
 
+        bool hasSheep = false;
 
         //These make the perception work
         private Collider _threatTarget;
@@ -67,11 +72,14 @@ namespace GDD3400.Project01
         private List<Collider> _friendTargets = new List<Collider>();
 
 
+
         public void Awake()
         {
             // Find the layers in the project settings
             _targetsLayer = LayerMask.GetMask("Targets");
             _obstaclesLayer = LayerMask.GetMask("Obstacles");
+
+            startPosition = transform.position;
 
             _rb = GetComponent<Rigidbody>();
 
@@ -89,8 +97,9 @@ namespace GDD3400.Project01
         {
 
             //this code is similar to the sheep perception except the threat possibilites are not needed
-
+     
             _friendTargets.Clear();
+
             _safeZoneTarget = null;
 
             // Collect all target colliders within the sight radius
@@ -127,37 +136,38 @@ namespace GDD3400.Project01
         {
             _floatingTarget = Vector3.Lerp(_floatingTarget, _target, Time.deltaTime * 10f);
 
-            // First calculate the centroid of the friends, this is useful for both flocking and fleeing
-            Vector3 centroid = Vector3.zero;
-
-            // Calculate the centroid of all friend targets
-            if (_friendTargets.Count > 0)
-            {
-                foreach (var friend in _friendTargets)
-                {
-                    centroid += friend.transform.position;
-                }
-
-                centroid /= _friendTargets.Count;
-            }
 
 
-            //Check if number of targers friends nearby is a certain threshold, if so, head to Safe Zone
+            //Check if number of target friends nearby is a certain threshold, if so, head to Safe Zone
 
-            if(_friendTargets.Count >= 3)
+            if(_friendTargets.Count >= 3 )
             {
 
-                //walkspeed is important her because otherwise the sheep could not keep up
-                _target = _safeZoneTarget.transform.position;
+                //walkspeed is important here because otherwise the sheep could not keep up
+
+                _target = startPosition;
                 _targetSpeed = _walkSpeed;
-                return;
+                
+
+                 hasSheep = true;
+                
+                 return;
 
             }
 
+
+
+               
             // Dog should go fast if sheep are not following
             _targetSpeed = _maxSpeed;
 
+            if(hasSheep == false)
+
+            {
+
             _target = transform.position;
+
+            }
 
             
         }
@@ -181,7 +191,7 @@ namespace GDD3400.Project01
 
                 // Calculate the movement vector
                 _velocity = direction * Mathf.Min(_targetSpeed, Vector3.Distance(transform.position, _floatingTarget));
-            }
+           }
 
             // Calculate the desired rotation towards the movement vector
             if (_velocity != Vector3.zero)
@@ -192,7 +202,13 @@ namespace GDD3400.Project01
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, _turnRate);
             }
 
+          
+
+
             _rb.linearVelocity = _velocity;
+
+
+        
 
 
             
