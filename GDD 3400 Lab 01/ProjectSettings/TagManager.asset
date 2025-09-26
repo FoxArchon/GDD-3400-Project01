@@ -7,6 +7,7 @@ TagManager:
   - Friend
   - Threat
   - SafeZone
+  - Obstacle
   layers:
   - Default
   - TransparentFX

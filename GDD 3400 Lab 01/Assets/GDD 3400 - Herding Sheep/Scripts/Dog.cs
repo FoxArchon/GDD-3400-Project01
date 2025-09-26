@@ -8,22 +8,27 @@ using UnityEngine.UIElements;
 namespace GDD3400.Project01
 {
 
+    //not sure what selection base is
     [SelectionBase]
-    [RequireComponent(typeof(Rigidbody))]
-    public class Dog : MonoBehaviour
-    {
 
-       
+    //I dont understand why the required component thing is necessary, ive used rigidbodies in unity/c# many time without that before
+    [RequireComponent(typeof(Rigidbody))]
+
+    public class Dog : MonoBehaviour
+    {   
+
+        //michellanious variables proably dont need all of them
+
         private Rigidbody _rb; 
         private Level _level;
-         
+        private bool _inSafeZone = false;
+        public bool InSafeZone => _inSafeZone;
         private bool _isActive = true;
         public bool IsActive 
         {
             get => _isActive;
             set => _isActive = value;
         }
-
 
         // Required Variables (Do not edit!)
         private float _maxSpeed = 5f;
@@ -38,12 +43,13 @@ namespace GDD3400.Project01
         private const string _threatTag = "Threat";
         private const string _safeZoneTag = "SafeZone";
 
-      
+        //added obstacle tag for walls
 
-        //Added variables to make the RigidBody stuff work
+        private const string _obstacleTag = "Obstacle";
 
+        //Added variables to make the RigidBody stuff work proably dont need all of them
 
-         // Movement Settings
+        // Movement Settings
         [NonSerialized] private float _stoppingDistance = 1.5f;
         [NonSerialized] private float _flockingDistance = 3.5f;
         [NonSerialized] private float _wanderSpeed = .5f;
@@ -51,7 +57,8 @@ namespace GDD3400.Project01
         [NonSerialized] private float _runSpeed = 5f;
         [NonSerialized] private float _turnRate = 5f;
 
-     
+
+        //need some of these for target checkin? proably dont need all of them
 
         // Dynamic Movement Variables
         private Vector3 _velocity;
@@ -60,17 +67,22 @@ namespace GDD3400.Project01
         private Vector3 _floatingTarget;
         private Collider[] _tmpTargets = new Collider[16]; // Maximum of 16 targets in each perception check
         
-        //start postion variable to go back to if have enough sheep nearby
-
-        private Vector3 startPosition;
-
-        bool hasSheep = false;
-
-        //These make the perception work
-        private Collider _threatTarget;
-        private Collider _safeZoneTarget;
+        //This makes the perception work for knowing if sheep are following
+        
         private List<Collider> _friendTargets = new List<Collider>();
+        private Collider _safeZoneTarget;
+        private Collider obstacleCollider;
 
+        //Added variables
+
+        //bool to see if sheep are following
+        bool hasSheep;
+
+        //step counter variable for when dog has already checked a certain direction for long enough
+        int stepCounter = 0;
+
+
+        public GameObject SafeZone;
 
 
         public void Awake()
@@ -78,29 +90,20 @@ namespace GDD3400.Project01
             // Find the layers in the project settings
             _targetsLayer = LayerMask.GetMask("Targets");
             _obstaclesLayer = LayerMask.GetMask("Obstacles");
-
-            startPosition = transform.position;
-
             _rb = GetComponent<Rigidbody>();
-
         }
 
         private void Update()
         {
-            if (!_isActive) return;
-            
+            if (!_isActive) return;         
             Perception();
             DecisionMaking();
         }
-
         private void Perception()
         {
+            //this code is similar to the sheep perception except the threat and safe zone aspects are not needed
 
-            //this code is similar to the sheep perception except the threat possibilites are not needed
-     
             _friendTargets.Clear();
-
-            _safeZoneTarget = null;
 
             // Collect all target colliders within the sight radius
             int t = Physics.OverlapSphereNonAlloc(transform.position, _sightRadius, _tmpTargets, _targetsLayer);
@@ -109,69 +112,131 @@ namespace GDD3400.Project01
                 var c = _tmpTargets[i];
                 if (c==null || c.gameObject == gameObject) continue;
 
-                // Store the friends and safe zone targets
+                // only freind tag is needed from sheep code
                 switch (c.tag)
                 {
                     case _friendTag:
                         _friendTargets.Add(c);
-                        break;
-                   
-                    case _safeZoneTag:
-                        _safeZoneTarget = c;
-                        break;
+                        break;                                   
                 }
-            }
-            
+            }      
         }
 
         private void DecisionMaking()
-        {
-          
-         CalculateMoveTarget();
+        { 
 
+            //if have group of sheep that is a cetain threshold lead them to the safe zone
+
+            if(hasSheep == true)
+            {
+                DeliverSheep(); 
+            }
+
+            else
+            {
+                Wander();
+            }
+      
         }
             
+        //Wander is set on distance threshhold. At 30 fps, after 10 seconds, dog will change to a random direction then move forward.
 
-             public void CalculateMoveTarget()
+         public void Wander()       
         {
-            _floatingTarget = Vector3.Lerp(_floatingTarget, _target, Time.deltaTime * 10f);
 
 
-
-            //Check if number of target friends nearby is a certain threshold, if so, head to Safe Zone
-
-            if(_friendTargets.Count >= 3 )
+            //add 1 to step if wandering
+            stepCounter +=1;
+            
+            // if ceratain abmount of steps taken
+            if(stepCounter > 190)
             {
+              //claculate new direction
+              transform.forward = new Vector3(UnityEngine.Random.Range(-1f, 1f), 0, UnityEngine.Random.Range(-1f, 1f));  
 
-                //walkspeed is important here because otherwise the sheep could not keep up
+              //reset step counter
+              stepCounter = 0;
+            }
+            
+            // simply move forward
+            transform.Translate(Vector3.forward * _maxSpeed * Time.deltaTime);
 
-                _target = startPosition;
-                _targetSpeed = _walkSpeed;
-                
+            //check if sheep are following, if so , hasSheep becomes true and dog will no longer wander
 
-                 hasSheep = true;
-                
-                 return;
+            if(_friendTargets.Count >= 3)
+            {
+                hasSheep = true;
+            }
 
+        }
+
+
+        // deliver function that goes back to the start postion of the dog which should be the safe zone
+        //since the dog will have a freind tag, sheep should flock to dog , so if he goes to the zone, sheep will follow suit
+
+        public void DeliverSheep()
+        {
+
+            //avoid walls
+            if (transform.position.x > 20 )
+            {
+                //turn west
+                transform.forward = new Vector3 (-90,0,-45);
+            }
+            if(transform.position.x < -20)
+            {
+                //turn east
+                transform.forward = new Vector3 (90,0,45);
+            }
+            if(transform.position.z > 20)
+            {
+                // turn  south
+                transform.forward = new Vector3 (-45,0,-90);
+            }
+            if(transform.position.z < -20)
+            {
+                //turn north
+                transform.forward = new Vector3 (45,0,90);
+            }
+
+            
+
+            //simply move forward
+            //walkspeed is important here because otherwise the sheep could not keep up
+
+            transform.Translate(Vector3.forward * _walkSpeed * Time.deltaTime);
+
+            
+
+        }
+
+        //if sheep are dropped of at safe zone, go back to wandering same as sheep code trigger except instead of disseappering into particles, 
+        //becomes false and therfore should go back to wandering
+
+        public void OnTriggerEnter(Collider other)
+        {
+            if (other.CompareTag(_safeZoneTag) && !_inSafeZone)
+            {
+                _inSafeZone = true;
+
+                if (_level != null)
+                {
+                    hasSheep = false;
+                }
             }
 
 
+            //if hit a wall turn around 
 
-               
-            // Dog should go fast if sheep are not following
-            _targetSpeed = _maxSpeed;
-
-            if(hasSheep == false)
-
+            if(other.CompareTag(_obstacleTag))
             {
-
-            _target = transform.position;
-
+                     transform.forward *= -1;
             }
 
-            
         }
+         
 
+        //copy and pasted sheep rigid body stuff for fixed update
 
         /// <summary>
         /// Make sure to use FixedUpdate for movement with physics based Rigidbody
@@ -180,8 +245,7 @@ namespace GDD3400.Project01
         private void FixedUpdate()
         {
             if (!_isActive) return;
-
-            
+         
                 //copy and pasted sheep rigid body code
 
              if (_floatingTarget != Vector3.zero && Vector3.Distance(transform.position, _floatingTarget) > _stoppingDistance)
@@ -202,15 +266,7 @@ namespace GDD3400.Project01
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, _turnRate);
             }
 
-          
-
-
             _rb.linearVelocity = _velocity;
-
-
-        
-
-
             
         }
     }
